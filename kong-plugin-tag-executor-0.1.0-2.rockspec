@@ -5,7 +5,7 @@ local rockspec_revision = "2"
 
 local github_account_name = "Apxdono"
 local github_repo_name = "kong-plugin-tag-executor"
-local git_checkout = package_version == "dev" and "master" or package_version
+-- local git_checkout = package_version == "dev" and "master" or package_version
 
 
 package = package_name
