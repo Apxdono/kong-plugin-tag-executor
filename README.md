@@ -1,4 +1,4 @@
-[![Build Status][badge-travis-image]][badge-travis-url]
+[![Build Status](https://github.com/Apxdono/kong-plugin-tag-executor/actions/workflows/test.yml/badge.svg)](https://github.com/Apxdono/kong-plugin-tag-executor/actions)
 
 # Kong plugin tag-executor
 
@@ -10,6 +10,14 @@ Goal of this plugin is to reduce duplication of huge plugin configurations for c
 
 For this particular reason plugin utilizes Route `tags` to determine if plugin `phases` should be invoked.
 (It feels like this feature belongs inside Kong's core functionality like it's done today with `route`, `service`, `consumer` references, but for now this plugin will do the job).
+
+## Installation
+
+Install the plugin using `luarocks`
+
+```sh
+luarocks install kong-plugin-tag-executor
+```
 
 ## Capabilities
 

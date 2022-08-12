@@ -13,13 +13,13 @@ version = package_version .. "-" .. rockspec_revision
 supported_platforms = { "linux", "macosx" }
 source = {
   url = "git+https://github.com/" .. github_account_name .. "/" .. github_repo_name .. ".git",
-  branch = git_checkout,
+  tag = "v" .. package_version,
 }
 
 
 description = {
-  summary = "Kong is a scalable and customizable API Management Layer built on top of Nginx.",
-  homepage = "https://" .. github_account_name .. ".github.io/" .. github_repo_name,
+  summary = "Goal of this plugin is to reduce duplication of huge plugin configurations for cases when plugins must be configured on specific routes.",
+  homepage = https://github.com/" .. github_account_name .. "/" .. github_repo_name .. ",
   license = "Apache 2.0",
 }
 
