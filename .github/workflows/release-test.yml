@@ -32,7 +32,7 @@ jobs:
     - name: Bump version
       env:
         INPUT_VERSION: ${{ github.event.inputs.releaseVersion }}
-      run:
+      run: |
         luarocks new_version $SPEC_FILE $INPUT_VERSION
         rm $SPEC_FILE
         SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
