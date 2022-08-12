@@ -1,4 +1,4 @@
-name: Testing release
+name: Testing plugin release
 on:
   workflow_dispatch:
     inputs:
