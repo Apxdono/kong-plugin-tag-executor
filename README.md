@@ -1,71 +1,71 @@
 [![Build Status][badge-travis-image]][badge-travis-url]
 
-Kong plugin template
-====================
+# Kong plugin tag-executor
 
-This repository contains a very simple Kong plugin template to get you
-up and running quickly for developing your own plugins.
+This plugin is designed specifically for Kong `dbless` with `declarative config` mode of operation. *If you're running Kong with database
+and have outside tools/pipelines that control Kong's configuration this plugin is of little use to you.*
 
-This template was designed to work with the
-[`kong-pongo`](https://github.com/Kong/kong-pongo) and
-[`kong-vagrant`](https://github.com/Kong/kong-vagrant) development environments.
+Goal of this plugin is to reduce duplication of huge plugin configurations for cases when plugins must be configured on specific routes (especially when number of `services` and
+`routes` increases in your project all the time).
 
-Please check out those repos `README` files for usage instructions. For a complete
-walkthrough check [this blogpost on the Kong website](https://konghq.com/blog/custom-lua-plugin-kong-gateway).
+For this particular reason plugin utilizes Route `tags` to determine if plugin `phases` should be invoked.
+(It feels like this feature belongs inside Kong's core functionality like it's done today with `route`, `service`, `consumer` references, but for now this plugin will do the job).
+
+## Capabilities
+
+- Plugin can use configuration of any other plugin installed in Kong instance [referenec docs](https://docs.konghq.com/gateway/latest/reference/configuration/#plugins).
+- Plugin is designed to work with `declarative_config` only (Tested only against `dbless` Kong). *In theory can work in 'Kong with DB' environments*.
+- Execution of nested plugins and their phases respects Kong's [plugin execution order](https://docs.konghq.com/gateway/latest/plugin-development/custom-logic/#plugins-execution-order).
+- Plugin is executed before any other plugin (has pretty High Priority)
+- Plugin is supposed to be global (targeting tags provides really fine grained control).
+- Can be used on specific `routes`, `services`, `consumers` (which defeats the purpose).
+## Limitations
+
+- Providing nested plugin configuration for `tag-executor` itself (self-config) has no effect. `tag-executor` plugin is omitted from phase executions to avoid potential overflows due to recursive calls.
+- Works only with `HTTP/HTTPS` requests (No `stream` support yet?).
 
 
-Naming and versioning conventions
-=================================
+## Example
+Below is the example configuration one might use in `declarative_config`:
 
-There are a number "named" components and related versions. These are the conventions:
+```yaml
+- name: tag-executor
+  config:
+    tag_execute_steps:
+      - name: service-tracing-step
+        target_tag: tracing
+        plugins:
+          - name: correlation-id
+            config:
+              header_name: correlation-id
+              generator: uuid
+              echo_downstream: true
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-Traced-With:correlation
+      - name: another-step
+          # More and more configurations
+```
 
-* *Kong plugin name*: This is the name of the plugin as it is shown in the Kong
-  Manager GUI, and the name used in the file system. A plugin named `my-cool-plugin`
-  would have a `handler.lua` file at `./kong/plugins/my-cool-plugin/handler.lua`.
+Whenever Kong receives a request this plugin invokes each of `tag_execute_steps`.
+In this example when route that has `tracing` tag is matched, `correlation-id`
+and `request-transformer` plugins are invoked and request to upstream gets
+modified by the plugins.
 
-* *Kong plugin version*: This is the version of the plugin code, expressed in
-  `x.y.z` format (using Semantic Versioning is recommended). This version should
-  be set in the `handler.lua` file as the `VERSION` property on the plugin table.
+## Configuration
 
-* *LuaRocks package name*: This is the name used in the LuaRocks eco system.
-  By convention this is `kong-plugin-[KongPluginName]`. This name is used
-  for the `rockspec` file, both in the filename as well as in the contents
-  (LuaRocks requires that they match).
+|Property|Description|
+|----|----|
+|`name`<br/>*required*<br/><br/>**Type:** string|The name of the plugin, in this case `tag-executor`.|
+|`config.tag_execute_steps`<br/>*required*<br/><br/>**Type:** array of record elements|The steps to invoke on each phase of the plugin.|
+|`config.tag_execute_steps.[?].name`<br/>*required*<br/><br/>**Type:** string|Unique name of this step.|
+|`config.tag_execute_steps.[?].target_tag`<br/>*optional*<br/><br/>**Type:** string|Tag to match on `route`. If not specified applies steps to all routes.|
+|`config.tag_execute_steps.[?].plugins`<br/>*required*<br/><br/>**Type:** array of plugin configurations|Configurations of plugins to execute ([Kong declarative configuration format](https://docs.konghq.com/gateway/latest/reference/db-less-and-declarative-config/#declarative-configuration-format)). Refer to particular plugin documentation for configuration reference.|
 
-* *LuaRocks package version*: This is the version of the package, and by convention
-  it should be identical to the *Kong plugin version*. As with the *LuaRocks package
-  name* the version is used in the `rockspec` file, both in the filename as well
-  as in the contents (LuaRocks requires that they match).
+### Notes to self/TODO
 
-* *LuaRocks rockspec revision*: This is the revision of the rockspec, and it only
-  changes if the rockspec is updated. So when the source code remains the same,
-  but build instructions change for example. When there is a new *LuaRocks package
-  version* the *LuaRocks rockspec revision* is reset to `1`. As with the *LuaRocks
-  package name* the revision is used in the `rockspec` file, both in the filename
-  as well as in the contents (LuaRocks requires that they match).
-
-* *LuaRocks rockspec name*: this is the filename of the rockspec. This is the file
-  that contains the meta-data and build instructions for the LuaRocks package.
-  The filename is `[package name]-[package version]-[package revision].rockspec`.
-
-Example
--------
-
-* *Kong plugin name*: `my-cool-plugin`
-
-* *Kong plugin version*: `1.4.2` (set in the `VERSION` field inside `handler.lua`)
-
-This results in:
-
-* *LuaRocks package name*: `kong-plugin-my-cool-plugin`
-
-* *LuaRocks package version*: `1.4.2`
-
-* *LuaRocks rockspec revision*: `1`
-
-* *rockspec file*: `kong-plugin-my-cool-plugin-1.4.2-1.rockspec`
-
-* File *`handler.lua`* is located at: `./kong/plugins/my-cool-plugin/handler.lua` (and similar for the other plugin files)
-
-[badge-travis-url]: https://travis-ci.org/Kong/kong-plugin/branches
-[badge-travis-image]: https://travis-ci.com/Kong/kong-plugin.svg?branch=master
+1. Upload to Luarocks via GH Actions
+2. Write docs for Kong plugin hub
+3. More testing
