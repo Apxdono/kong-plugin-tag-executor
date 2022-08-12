@@ -1,0 +1,27 @@
+name: Testing plugin release
+on:
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        decription: "Release version"
+        required: true
+
+jobs:
+  releasePlugin:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - uses: leafo/gh-actions-lua@v9
+    - uses: leafo/gh-actions-luarocks@v4
+
+    - name: Install locally
+      env:
+        PLUGIN_RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+      run: |
+        luarocks --version
+        luarocks install --local kong-plugin-tag-executor-*-.rockspec
+        luarocks show kong-plugin-tag-executor
+        echo "Releasing version: $PLUGIN_RELEASE_VERSION"
