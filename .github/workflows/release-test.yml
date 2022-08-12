@@ -4,7 +4,8 @@ on:
     inputs:
       releaseVersion:
         decription: "Release version"
-        required: true
+        required: false
+
 
 jobs:
   releasePlugin:
@@ -21,7 +22,7 @@ jobs:
       env:
         PLUGIN_RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
       run: |
-        luarocks --version
         luarocks install --local kong-plugin-tag-executor-*.rockspec
         luarocks show kong-plugin-tag-executor
-        echo "Releasing version: $PLUGIN_RELEASE_VERSION"
+        luarocks new_version kong-plugin-tag-executor-*.rockspec $PLUGIN_RELEASE_VERSION
+        ls -la
