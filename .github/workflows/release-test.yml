@@ -22,7 +22,8 @@ jobs:
       env:
         PLUGIN_RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
       run: |
-        luarocks install --local kong-plugin-tag-executor-*.rockspec
+        SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
+        luarocks install --local $SPEC_FILE
         luarocks show kong-plugin-tag-executor
-        luarocks new_version kong-plugin-tag-executor-*.rockspec $PLUGIN_RELEASE_VERSION
-        ls -la
+        luarocks new_version $SPEC_FILE $PLUGIN_RELEASE_VERSION
+        rm $SPEC_FILE
