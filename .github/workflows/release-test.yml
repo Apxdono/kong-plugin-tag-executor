@@ -1,5 +1,4 @@
-name: Release Test
-
+name: Testing release
 on:
   workflow_dispatch:
     inputs:
