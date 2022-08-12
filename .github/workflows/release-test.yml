@@ -22,6 +22,6 @@ jobs:
         PLUGIN_RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
       run: |
         luarocks --version
-        luarocks install --local kong-plugin-tag-executor-*-.rockspec
+        luarocks install --local kong-plugin-tag-executor-*.rockspec
         luarocks show kong-plugin-tag-executor
         echo "Releasing version: $PLUGIN_RELEASE_VERSION"
