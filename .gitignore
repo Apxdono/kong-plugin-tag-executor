@@ -11,3 +11,8 @@ luacov.stats.out
 luacov.report.out
 # exclude Pongo containerid file
 .containerid
+
+.luarocks
+.install
+.lua
+.vscode
