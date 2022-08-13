@@ -65,6 +65,7 @@ jobs:
         LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
       run: |
         source /tmp/commons
+        printenv
         echo -e "Releasing v$RELEASE_VERSION"
         echo "${{ env.RELEASE_MESSAGE }}"
         luarocks install dkjson
