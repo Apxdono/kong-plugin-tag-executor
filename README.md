@@ -1,4 +1,5 @@
 [![Build Status](https://github.com/Apxdono/kong-plugin-tag-executor/actions/workflows/test.yml/badge.svg)](https://github.com/Apxdono/kong-plugin-tag-executor/actions)
+[![LuaRocks](https://img.shields.io/luarocks/v/Apxdono/kong-plugin-tag-executor?color=%2300aaff)](https://luarocks.org/modules/Apxdono/kong-plugin-tag-executor)
 
 # Kong plugin tag-executor
 
