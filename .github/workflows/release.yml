@@ -1,0 +1,98 @@
+name: Release plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      bumpVersion:
+        decription: |
+          Bump to this version after release.
+          If left empty will bump revision only
+        required: false
+
+jobs:
+  releasePlugin:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - uses: leafo/gh-actions-lua@v9
+      with:
+        buildCache: false
+
+    - uses: leafo/gh-actions-luarocks@v4
+
+    - name: Create common aliases
+      run: |
+        cat <<EOF > /tmp/commons
+          shopt -s expand_aliases
+          alias plug_version='luarocks show kong-plugin-tag-executor | grep kong-plugin-tag-executor | head -n 1 | cut -d" " -f 2'
+        EOF
+
+    - name: Prepare release
+      run: |
+        source /tmp/commons
+        RELEASE_SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
+
+        luarocks install $RELEASE_SPEC_FILE
+
+        RELEASE_VERSION=$(plug_version)
+
+        cat <<EOF >> $GITHUB_ENV
+        RELEASE_SPEC_FILE=$RELEASE_SPEC_FILE
+        RELEASE_VERSION=$RELEASE_VERSION
+        EOF
+
+        echo "RELEASE_MESSAGE<<EOF" >> $GITHUB_ENV
+        echo "Changes in this release:" >> $GITHUB_ENV
+        echo "$(git log $(git describe --tags --abbrev=0)..HEAD --oneline)" >> $GITHUB_ENV
+        echo 'EOF' >> $GITHUB_ENV
+
+    - name: Create Release Commit
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ env.RELEASE_VERSION }}
+        release_name: Release tag-executor Kong plugin v${{ env.RELEASE_VERSION }}
+        body: ${{ env.RELEASE_MESSAGE }}
+        draft: false
+        prerelease: false
+
+    - name: Release plugin
+      env:
+        LUAROCKS_API_KEY=${{ secrets.LUAROCKS_API_KEY }}
+      run: |
+        source /tmp/commons
+        echo -e "Releasing v$RELEASE_VERSION"
+        echo "${{ env.RELEASE_MESSAGE }}"
+        luarocks install dkjson
+        luarocks upload --api-key $LUAROCKS_API_KEY $RELEASE_SPEC_FILE
+
+    - name: Bump version
+      env:
+        INPUT_VERSION: ${{ github.event.inputs.releaseVersion }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BOT_EMAIL: $${{ secrets.BOT_EMAIL }}
+      run: |
+        source /tmp/commons
+        luarocks new_version $RELEASE_SPEC_FILE $INPUT_VERSION
+        rm $RELEASE_SPEC_FILE
+
+        SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
+        luarocks install $SPEC_FILE
+        NEW_VERSION=$(plug_version)
+        echo "Preparing new version: $NEW_VERSION"
+
+        git config --local user.email $BOT_EMAIL
+        git config --local user.name "Apxdono [CI-BOT]"
+        git add .
+        git commit -m "[skip-ci] Preparing new version v$NEW_VERSION"
+
+    - name: Push new version
+      uses: ad-m/github-push-action@master
+      if: ${{ github.ref == 'refs/heads/master' }}
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: master
