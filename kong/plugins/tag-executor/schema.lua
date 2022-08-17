@@ -38,8 +38,8 @@ local function init_empty_plugin_fields(plugin_config)
 
       local cnf = plugin_schema:process_auto_fields(plugin_record, "select", false)
       cnf["name"] = plug_name
-
-      insert(initilized_configs, cnf)
+      local transformed_config = plugin_schema:transform(cnf, plugin_record, nil)
+      insert(initilized_configs, transformed_config)
     end
     -- @todo Figure out if inplace modification is a no no
     step.plugins = initilized_configs
