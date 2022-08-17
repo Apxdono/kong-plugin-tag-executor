@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - uses: leafo/gh-actions-lua@v9
         with:
@@ -28,6 +30,13 @@ jobs:
           cat <<EOF > /tmp/commons
             shopt -s expand_aliases
             alias plug_version='luarocks show kong-plugin-tag-executor | grep kong-plugin-tag-executor | head -n 1 | cut -d" " -f 2'
+          EOF
+
+      - name: Create release changes file
+        run: |
+          cat <<EOF > /tmp/release-message.md
+          # Changes in this release
+          $(git log $(git describe --tags --abbrev=0)..HEAD --oneline)
           EOF
 
       - name: Prepare release
@@ -44,58 +53,52 @@ jobs:
           RELEASE_VERSION=$RELEASE_VERSION
           EOF
 
-          cat <<EOF > /tmp/release-message.md
-          # Changes in this release
-          \$(git log \$(git describe --tags --abbrev=0)..HEAD --oneline)
-          EOF
+      - name: Create Release Commit
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.RELEASE_VERSION }}
+          release_name: Release tag-executor Kong plugin v${{ env.RELEASE_VERSION }}
+          body_path: /tmp/release-message.md
+          draft: false
+          prerelease: false
 
-      # - name: Create Release Commit
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: v${{ env.RELEASE_VERSION }}
-      #     release_name: Release tag-executor Kong plugin v${{ env.RELEASE_VERSION }}
-      #     body_path: /tmp/release-message.md
-      #     draft: false
-      #     prerelease: false
-
-      - name: Release plugin
+      - name: Publish plugin to luarocks
         env:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
         run: |
           source /tmp/commons
-          cat /tmp/release-message.md
           echo "Publishing tag-executor v$RELEASE_VERSION to LuaRocks"
-          # luarocks install dkjson
-          # luarocks upload --api-key $LUAROCKS_API_KEY $RELEASE_SPEC_FILE
+          luarocks install dkjson
+          luarocks upload --api-key $LUAROCKS_API_KEY $RELEASE_SPEC_FILE
 
-      # - name: Bump version
-      #   env:
-      #     INPUT_VERSION: ${{ github.event.inputs.releaseVersion }}
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     BOT_EMAIL: $${{ secrets.BOT_EMAIL }}
-      #   run: |
-      #     source /tmp/commons
+      - name: Bump .rockspec version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.releaseVersion }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOT_EMAIL: $${{ secrets.BOT_EMAIL }}
+        run: |
+          source /tmp/commons
 
-      #     git config --local user.email $BOT_EMAIL
-      #     git config --local user.name "Apxdono [CI-BOT]"
+          git config --local user.email $BOT_EMAIL
+          git config --local user.name "Apxdono [CI-BOT]"
 
-      #     luarocks new_version $RELEASE_SPEC_FILE $INPUT_VERSION
-      #     git rm $RELEASE_SPEC_FILE
+          luarocks new_version $RELEASE_SPEC_FILE $INPUT_VERSION
+          git rm $RELEASE_SPEC_FILE
 
-      #     SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
-      #     luarocks install $SPEC_FILE
+          SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
+          luarocks install $SPEC_FILE
 
-      #     NEW_VERSION=$(plug_version)
-      #     echo "Preparing new version: $NEW_VERSION"
+          NEW_VERSION=$(plug_version)
+          echo "Preparing new version: $NEW_VERSION"
 
-      #     git add $SPEC_FILE
-      #     git commit -m "[skip-ci] Preparing new version v$NEW_VERSION"
+          git add $SPEC_FILE
+          git commit -m "[skip-ci] Preparing new version v$NEW_VERSION"
 
-      # - name: Push new version
-      #   uses: ad-m/github-push-action@master
-      #   if: ${{ github.ref == 'refs/heads/master' }}
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     branch: master
+      - name: Push new version
+        uses: ad-m/github-push-action@master
+        if: ${{ github.ref == 'refs/heads/master' }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: master
