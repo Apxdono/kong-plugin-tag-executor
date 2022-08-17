@@ -44,8 +44,8 @@ jobs:
           RELEASE_VERSION=$RELEASE_VERSION
           EOF
 
-          cat <<EOF > /tmp/release-message
-          Changes in this release:
+          cat <<EOF > /tmp/release-message.md
+          # Changes in this release
           $(git log $(git describe --tags --abbrev=0)..HEAD --oneline)
           EOF
 
@@ -56,7 +56,7 @@ jobs:
         with:
           tag_name: v${{ env.RELEASE_VERSION }}
           release_name: Release tag-executor Kong plugin v${{ env.RELEASE_VERSION }}
-          body_path: /tmp/release-message
+          body_path: /tmp/release-message.md
           draft: false
           prerelease: false
 
@@ -65,6 +65,7 @@ jobs:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
         run: |
           source /tmp/commons
+          cat /tmp/release-message.md
           echo "Publishing tag-executor v$RELEASE_VERSION to LuaRocks"
           luarocks install dkjson
           luarocks upload --api-key $LUAROCKS_API_KEY $RELEASE_SPEC_FILE
@@ -76,17 +77,19 @@ jobs:
           BOT_EMAIL: $${{ secrets.BOT_EMAIL }}
         run: |
           source /tmp/commons
-          echo "RELEASE FILE TO DELETE: $RELEASE_SPEC_FILE"
-          luarocks new_version $RELEASE_SPEC_FILE $INPUT_VERSION
-          rm $RELEASE_SPEC_FILE
-
-          SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
-          luarocks install $SPEC_FILE
-          NEW_VERSION=$(plug_version)
-          echo "Preparing new version: $NEW_VERSION"
 
           git config --local user.email $BOT_EMAIL
           git config --local user.name "Apxdono [CI-BOT]"
+
+          luarocks new_version $RELEASE_SPEC_FILE $INPUT_VERSION
+          git rm $RELEASE_SPEC_FILE
+
+          SPEC_FILE=$(ls kong-plugin-tag-executor-*.rockspec)
+          luarocks install $SPEC_FILE
+
+          NEW_VERSION=$(plug_version)
+          echo "Preparing new version: $NEW_VERSION"
+
           git add $SPEC_FILE
           git commit -m "[skip-ci] Preparing new version v$NEW_VERSION"
 
