@@ -1,5 +1,5 @@
+local kong = kong
 local plugin_name = "tag-executor"
-
 local kong_types = require "kong.db.schema.typedefs"
 local insert = table.insert
 
@@ -23,7 +23,12 @@ local function validate_nested_plugin_config(plugin_record)
         string.format("plugin '%s' not enabled; add it to the 'plugins' configuration property", plugin_record.name)
   end
 
-  local config_field = plugin_schema.fields.config
+  local config_field = plugin_schema.fields["config"]
+  if not config_field then
+    kong.log.warn("Plugin " .. plugin_record.name .. " has no 'config' field. Skipping.")
+    return true, nil
+  end
+
   return plugin_schema:validate_field(config_field, plugin_record.config or nil)
 end
 
