@@ -9,7 +9,6 @@ local TagExecutor = {
 }
 
 local PHASES = {
-  certificate   = "certificate",
   rewrite       = "rewrite",
   access        = "access",
   header_filter = "header_filter",
@@ -97,10 +96,6 @@ function TagExecutor:init_worker()
     self.plugins_by_phase[phase] = filter_array_items(target_plugins, build_phase_predicate(phase))
   end
 
-end
-
-function TagExecutor:certificate(config)
-  invoke_plugins_for_phase(PHASES.certificate, self.plugins_by_phase, config.tag_execute_steps, kong.router.get_route())
 end
 
 function TagExecutor:preread(config)
