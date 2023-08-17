@@ -100,5 +100,5 @@ jobs:
         uses: CasperWA/push-protected@v2
         if: ${{ github.ref == 'refs/heads/master' }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.REPO_TOKEN_PUSH_PROTECTED }}
           branch: master
