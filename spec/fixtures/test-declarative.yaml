@@ -21,7 +21,7 @@ services:
       - name: user-service-cluster-api
         paths:
           - /apiint/users/internal
-      - name: not-found-route
+      - name: not-found-route-user-srv
         paths:
           - /
 
@@ -52,60 +52,59 @@ routes:
       - /
 
 plugins:
+  # Global plugins
 
-# Global plugins
+  - name: request-termination
+    route: not-found-route-req-term
+    config:
+      status_code: 404
+      content_type: application/json; charset=utf-8
+      body: |
+        {
+          "error_code": "UNKNOWN_PATH",
+          "message": "Unknown path"
+        }
 
-- name: request-termination
-  route: not-found-route
-  config:
-    status_code: 404
-    content_type: application/json; charset=utf-8
-    body: |
-      {
-        "error_code": "UNKNOWN_PATH",
-        "message": "Unknown path"
-      }
+  - name: correlation-id
+    config:
+      header_name: correlation-id
+      generator: tracker
+      echo_downstream: true
 
-- name: correlation-id
-  config:
-    header_name: correlation-id
-    generator: tracker
-    echo_downstream: true
+  - name: tag-executor
+    config:
+      tag_execute_steps:
+        - name: no-tag-step
+          plugins:
+            - name: request-transformer
+              config:
+                add:
+                  headers:
+                    - X-No-Tag-Ran:invoked
+        - name: service-tracing
+          target_tag: tracing
+          plugins:
+            # Instead of placing this on every route we can specify correlation id for "tracing" tag only.
+            # We override default "tracker" generator here as well
+            - name: correlation-id
+              config:
+                header_name: correlation-id
+                generator: uuid
+                echo_downstream: true
+            # Just to test multiple plugins do get invoked
+            - name: request-transformer
+              config:
+                add:
+                  headers:
+                    - X-Traced-With:correlation
 
-- name: tag-executor
-  config:
-    tag_execute_steps:
-      - name: no-tag-step
-        plugins:
-          - name: request-transformer
-            config:
-              add:
-                headers:
-                  - X-No-Tag-Ran:invoked
-      - name: service-tracing
-        target_tag: tracing
-        plugins:
-          # Instead of placing this on every route we can specify correlation id for "tracing" tag only.
-          # We override default "tracker" generator here as well
-          - name: correlation-id
-            config:
-              header_name: correlation-id
-              generator: uuid
-              echo_downstream: true
-          # Just to test multiple plugins do get invoked
-          - name: request-transformer
-            config:
-              add:
-                headers:
-                  - X-Traced-With:correlation
-
-      - name: external-api-transformations
-        target_tag: external-api
-        plugins:
-          # Imagine N+ lines of varios transformations happening here.
-          # Now imagine duplicating it on each route in db-less mode.
-          - name: request-transformer
-            config:
-              add:
-                headers:
-                  - X-Request-Type:external-request
+        - name: external-api-transformations
+          target_tag: external-api
+          plugins:
+            # Imagine N+ lines of varios transformations happening here.
+            # Now imagine duplicating it on each route in db-less mode.
+            - name: request-transformer
+              config:
+                add:
+                  headers:
+                    - X-Request-Type:external-request
