@@ -1,5 +1,5 @@
 package = "kong-plugin-tag-executor"
-version = "0.1.0-9"
+version = "1.1.0-1"
 source = {
    url = "git+https://github.com/Apxdono/kong-plugin-tag-executor.git"
 }
