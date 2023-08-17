@@ -17,20 +17,21 @@ jobs:
       fail-fast: true
       matrix:
         kongVersion:
-        - "2.7.x"
-        - "2.8.x"
-        - "nightly"
+          - "2.7.x"
+          - "2.8.x"
+          - "3.3.x"
+          - "dev"
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - uses: Kong/kong-pongo-action@v1
-      with:
-        kong_version: ${{ matrix.kongVersion }}
+      - uses: Kong/kong-pongo-action@latest
+        with:
+          kong_version: ${{ matrix.kongVersion }}
 
-    - run: pongo run -- --coverage
+      - run: pongo run -- --coverage
 
-    - uses: leafo/gh-actions-lua@v8
-      if: success()
-    - uses: leafo/gh-actions-luarocks@v4
-      if: success()
+      - uses: leafo/gh-actions-lua@v8
+        if: success()
+      - uses: leafo/gh-actions-luarocks@v4
+        if: success()

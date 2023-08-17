@@ -36,47 +36,42 @@ local function filter_array_items(items, predicate)
 end
 
 local function build_plugin_name_predicate(target_name)
-
   return function(plugin_conf)
     return plugin_conf.name == target_name
   end
-
 end
 
 local function build_phase_predicate(phase)
-
   return function(plugin)
     local phase_fn = plugin.handler[phase]
     return phase_fn and type(phase_fn) == "function"
   end
-
 end
 
 local function invoke_plugins_for_phase(phase, plugins_by_phase, steps, route)
+  if not route then
+    kong.log.debug("Skipping execution: no route matched the request")
+    return
+  end
+
   local phase_plugins = plugins_by_phase[phase]
 
   for _, step in ipairs(steps) do
-
     if not step.target_tag or utils.table_contains(route.tags, step.target_tag) then
       kong.log.debug(strfmt("Invoking '%s' tag execution '%s' on route '%s'", phase, step.name, route.name))
 
       for _, plugin in ipairs(phase_plugins) do
-
         local plugin_options = find_first(step.plugins, build_plugin_name_predicate(plugin.name))
 
         if plugin_options then
           kong.log.debug(strfmt("Invoking '%s' phase of plugin '%s'", phase, plugin.name))
           plugin.handler[phase](plugin.handler, plugin_options.config)
         end
-
       end
-
     else
       kong.log.debug(strfmt("Skipping '%s' tag execution '%s' on route '%s'", phase, step.name, route.name))
     end
-
   end
-
 end
 
 function TagExecutor:init_worker()
@@ -95,7 +90,6 @@ function TagExecutor:init_worker()
   for _, phase in pairs(PHASES) do
     self.plugins_by_phase[phase] = filter_array_items(target_plugins, build_phase_predicate(phase))
   end
-
 end
 
 function TagExecutor:preread(config)
