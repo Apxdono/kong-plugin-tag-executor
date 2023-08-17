@@ -97,7 +97,7 @@ jobs:
           git commit -m "[skip-ci] Preparing new version v$NEW_VERSION"
 
       - name: Push new version
-        uses: ad-m/github-push-action@master
+        uses: CasperWA/push-protected@v2
         if: ${{ github.ref == 'refs/heads/master' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
